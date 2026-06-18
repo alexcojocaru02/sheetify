@@ -44,28 +44,12 @@ class _ViewerScreenState extends State<ViewerScreen> {
     _store.load().then((_) => setState(() {}));
     if (_isPdf) {
       _pdfController = PdfViewerController();
-      _pdfController.addListener(_onPdfUpdate);
     }
   }
 
   @override
   void dispose() {
-    if (_isPdf) {
-      _pdfController.removeListener(_onPdfUpdate);
-      _pdfController.dispose();
-    }
     super.dispose();
-  }
-
-  void _onPdfUpdate() {
-    final page = _pdfController.currentPageNumber;
-    final total = _pdfController.pageCount;
-    if (page != null && total != null) {
-      setState(() {
-        _currentPage = page;
-        _totalPages = total;
-      });
-    }
   }
 
   void _addStroke(int page, Stroke stroke) {
@@ -139,6 +123,12 @@ class _ViewerScreenState extends State<ViewerScreen> {
       widget.filePath,
       controller: _pdfController,
       params: PdfViewerParams(
+        onPageChanged: (page) {
+          if (page != null) setState(() => _currentPage = page);
+        },
+        onDocumentChanged: (doc) {
+          if (doc != null) setState(() => _totalPages = doc.pages.length);
+        },
         pageOverlaysBuilder: (context, pageRect, page) {
           return [
             IgnorePointer(
