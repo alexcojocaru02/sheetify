@@ -7,11 +7,13 @@ class ScoreCard extends StatelessWidget {
     required this.score,
     required this.onTap,
     required this.onDelete,
+    this.onAddToSetlist,
   });
 
   final Score score;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final VoidCallback? onAddToSetlist;
 
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
@@ -42,6 +44,15 @@ class ScoreCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
+            if (onAddToSetlist != null)
+              ListTile(
+                leading: const Icon(Icons.playlist_add),
+                title: const Text('Add to setlist'),
+                onTap: () {
+                  Navigator.pop(context);
+                  onAddToSetlist!();
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
               title: const Text('Remove from library',

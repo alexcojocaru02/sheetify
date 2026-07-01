@@ -2,13 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/library_store.dart';
 import '../models/score.dart';
+import '../models/setlist_store.dart';
 import '../widgets/score_card.dart';
 import 'viewer_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key, required this.library});
+  const LibraryScreen({
+    super.key,
+    required this.library,
+    required this.setlists,
+  });
 
   final LibraryStore library;
+  final SetlistStore setlists;
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -154,6 +160,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         score: scores[i],
         onTap: () => _openScore(scores[i]),
         onDelete: () => widget.library.remove(scores[i].path),
+        onAddToSetlist: () => _showAddToSetlist(context, scores[i]),
       ),
     );
   }
@@ -191,6 +198,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             trailing: IconButton(
               icon: const Icon(Icons.more_vert),
               onPressed: () => _showScoreOptions(context, s),
+              tooltip: 'Options',
             ),
             onTap: () => _openScore(s),
           ),
@@ -216,6 +224,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   color: Colors.grey[400], borderRadius: BorderRadius.circular(2)),
             ),
             ListTile(
+              leading: const Icon(Icons.playlist_add),
+              title: const Text('Add to setlist'),
+              onTap: () {
+                Navigator.pop(context);
+                _showAddToSetlist(context, score);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
               title: const Text('Remove', style: TextStyle(color: Colors.red)),
               onTap: () {
@@ -224,6 +240,90 @@ class _LibraryScreenState extends State<LibraryScreen> {
               },
             ),
             const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddToSetlist(BuildContext context, Score score) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.5,
+        maxChildSize: 0.85,
+        builder: (_, scrollCtrl) => Column(
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Row(
+                children: [
+                  Text('Add to setlist',
+                      style: Theme.of(context).textTheme.titleMedium),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListenableBuilder(
+                listenable: widget.setlists,
+                builder: (context, _) {
+                  final all = widget.setlists.setlists;
+                  if (all.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Text(
+                          'No setlists yet.\nCreate one in the Setlists tab.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    controller: scrollCtrl,
+                    itemCount: all.length,
+                    itemBuilder: (_, i) {
+                      final sl = all[i];
+                      final inSetlist = sl.scorePaths.contains(score.path);
+                      return CheckboxListTile(
+                        value: inSetlist,
+                        onChanged: (_) =>
+                            widget.setlists.toggleScore(sl.id, score.path),
+                        title: Text(sl.name),
+                        subtitle: Text(
+                            '${sl.count} ${sl.count == 1 ? 'score' : 'scores'}'),
+                        secondary: const Icon(Icons.queue_music),
+                        controlAffinity: ListTileControlAffinity.trailing,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: FilledButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44)),
+                child: const Text('Done'),
+              ),
+            ),
           ],
         ),
       ),

@@ -59,83 +59,84 @@ class AnnotationToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return SafeArea(
-      top: false,
-      child: Container(
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHigh,
-          border: Border(top: BorderSide(color: scheme.outlineVariant, width: 0.5)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Tool row
-            Row(
-              children: [
-                // Draw mode toggle
-                _ToolButton(
-                  icon: isDrawMode ? Icons.draw : Icons.draw_outlined,
-                  selected: isDrawMode,
-                  tooltip: isDrawMode ? 'View mode' : 'Draw mode',
-                  onTap: onDrawModeToggled,
-                  scheme: scheme,
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
+        border: Border(top: BorderSide(color: scheme.outlineVariant, width: 0.5)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _ToolButton(
+                        icon: isDrawMode ? Icons.draw : Icons.draw_outlined,
+                        selected: isDrawMode,
+                        tooltip: isDrawMode ? 'View mode' : 'Draw mode',
+                        onTap: onDrawModeToggled,
+                        scheme: scheme,
+                      ),
+                      if (isDrawMode) ...[
+                        const SizedBox(width: 2),
+                        _ToolButton(
+                          icon: Icons.edit,
+                          selected: activeTool == DrawTool.pen,
+                          tooltip: 'Pen',
+                          onTap: () => onToolChanged(DrawTool.pen),
+                          scheme: scheme,
+                        ),
+                        _ToolButton(
+                          icon: Icons.format_color_fill,
+                          selected: activeTool == DrawTool.highlighter,
+                          tooltip: 'Highlighter',
+                          onTap: () => onToolChanged(DrawTool.highlighter),
+                          scheme: scheme,
+                        ),
+                        _ToolButton(
+                          icon: Icons.auto_fix_high,
+                          selected: activeTool == DrawTool.eraser,
+                          tooltip: 'Eraser',
+                          onTap: () => onToolChanged(DrawTool.eraser),
+                          scheme: scheme,
+                        ),
+                        const _Divider(),
+                        if (activeTool != DrawTool.eraser)
+                          ...(_colors.map((c) => _ColorDot(
+                                color: c,
+                                selected: activeColor.value == c.value,
+                                onTap: () => onColorChanged(c),
+                              ))),
+                        if (activeTool != DrawTool.eraser) const _Divider(),
+                        ...(_widths.map((w) => _WidthDot(
+                              width: w,
+                              selected: activeWidth == w,
+                              color: activeTool == DrawTool.eraser
+                                  ? scheme.onSurfaceVariant
+                                  : activeTool == DrawTool.highlighter
+                                      ? activeColor.withOpacity(0.5)
+                                      : activeColor,
+                              onTap: () => onWidthChanged(w),
+                            ))),
+                      ],
+                    ],
+                  ),
                 ),
-                if (isDrawMode) ...[
-                  const SizedBox(width: 2),
-                  _ToolButton(
-                    icon: Icons.edit,
-                    selected: activeTool == DrawTool.pen,
-                    tooltip: 'Pen',
-                    onTap: () => onToolChanged(DrawTool.pen),
-                    scheme: scheme,
-                  ),
-                  _ToolButton(
-                    icon: Icons.format_color_fill,
-                    selected: activeTool == DrawTool.highlighter,
-                    tooltip: 'Highlighter',
-                    onTap: () => onToolChanged(DrawTool.highlighter),
-                    scheme: scheme,
-                  ),
-                  _ToolButton(
-                    icon: Icons.auto_fix_high,
-                    selected: activeTool == DrawTool.eraser,
-                    tooltip: 'Eraser',
-                    onTap: () => onToolChanged(DrawTool.eraser),
-                    scheme: scheme,
-                  ),
-                  const _Divider(),
-                  // Colors (not shown for eraser)
-                  if (activeTool != DrawTool.eraser)
-                    ...(_colors.map((c) => _ColorDot(
-                          color: c,
-                          selected: activeColor.value == c.value,
-                          onTap: () => onColorChanged(c),
-                        ))),
-                  if (activeTool != DrawTool.eraser) const _Divider(),
-                  // Width dots
-                  ...(_widths.map((w) => _WidthDot(
-                        width: w,
-                        selected: activeWidth == w,
-                        color: activeTool == DrawTool.eraser
-                            ? scheme.onSurfaceVariant
-                            : activeTool == DrawTool.highlighter
-                                ? activeColor.withOpacity(0.5)
-                                : activeColor,
-                        onTap: () => onWidthChanged(w),
-                      ))),
-                ],
-                const Spacer(),
-                if (isDrawMode)
-                  IconButton(
-                    icon: const Icon(Icons.undo),
-                    onPressed: canUndo ? onUndo : null,
-                    tooltip: 'Undo',
-                    iconSize: 22,
-                  ),
-              ],
-            ),
-          ],
+              ),
+              if (isDrawMode)
+                IconButton(
+                  icon: const Icon(Icons.undo),
+                  onPressed: canUndo ? onUndo : null,
+                  tooltip: 'Undo',
+                  iconSize: 22,
+                ),
+            ],
+          ),
         ),
       ),
     );
