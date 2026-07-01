@@ -9,6 +9,7 @@ class DrawingCanvas extends StatefulWidget {
     required this.activeColor,
     required this.activeWidth,
     required this.isEraser,
+    required this.isHighlighter,
     required this.onStrokeComplete,
   });
 
@@ -16,6 +17,7 @@ class DrawingCanvas extends StatefulWidget {
   final Color activeColor;
   final double activeWidth;
   final bool isEraser;
+  final bool isHighlighter;
   final void Function(Stroke stroke) onStrokeComplete;
 
   @override
@@ -37,6 +39,7 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
         color: widget.activeColor,
         width: widget.activeWidth,
         isEraser: widget.isEraser,
+        isHighlighter: widget.isHighlighter,
       );
     });
   }
@@ -49,6 +52,7 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
         color: _active!.color,
         width: _active!.width,
         isEraser: _active!.isEraser,
+        isHighlighter: _active!.isHighlighter,
       );
     });
   }

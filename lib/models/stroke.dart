@@ -6,19 +6,22 @@ class Stroke {
     required this.color,
     required this.width,
     this.isEraser = false,
+    this.isHighlighter = false,
   });
 
-  // Points are normalized [0,1] relative to page size so they survive zoom changes
+  // Points stored as normalized [0,1] offsets relative to page size
   final List<Offset> points;
   final Color color;
   final double width;
   final bool isEraser;
+  final bool isHighlighter;
 
   Map<String, dynamic> toJson() => {
         'points': points.map((p) => [p.dx, p.dy]).toList(),
         'color': color.value,
         'width': width,
         'isEraser': isEraser,
+        'isHighlighter': isHighlighter,
       };
 
   factory Stroke.fromJson(Map<String, dynamic> json) => Stroke(
@@ -31,5 +34,6 @@ class Stroke {
         color: Color(json['color'] as int),
         width: (json['width'] as num).toDouble(),
         isEraser: json['isEraser'] as bool? ?? false,
+        isHighlighter: json['isHighlighter'] as bool? ?? false,
       );
 }

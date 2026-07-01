@@ -1,23 +1,45 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'models/library_store.dart';
+import 'screens/library_screen.dart';
 
 void main() {
   runApp(const SheetifyApp());
 }
 
-class SheetifyApp extends StatelessWidget {
+class SheetifyApp extends StatefulWidget {
   const SheetifyApp({super.key});
+
+  @override
+  State<SheetifyApp> createState() => _SheetifyAppState();
+}
+
+class _SheetifyAppState extends State<SheetifyApp> {
+  final _library = LibraryStore();
+
+  @override
+  void initState() {
+    super.initState();
+    _library.load();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Sheetify',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1A237E)),
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
+      themeMode: ThemeMode.system,
+      theme: _buildTheme(Brightness.light),
+      darkTheme: _buildTheme(Brightness.dark),
+      home: LibraryScreen(library: _library),
+    );
+  }
+
+  ThemeData _buildTheme(Brightness brightness) {
+    const seed = Color(0xFF3949AB); // Indigo
+    return ThemeData(
+      colorScheme: ColorScheme.fromSeed(seedColor: seed, brightness: brightness),
+      useMaterial3: true,
+      fontFamily: 'Roboto',
     );
   }
 }

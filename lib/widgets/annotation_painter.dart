@@ -22,12 +22,27 @@ class AnnotationPainter extends CustomPainter {
     if (stroke.points.length < 2) return;
 
     final paint = Paint()
-      ..strokeWidth = stroke.width
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke
-      ..blendMode = stroke.isEraser ? BlendMode.clear : BlendMode.srcOver
-      ..color = stroke.color;
+      ..style = PaintingStyle.stroke;
+
+    if (stroke.isEraser) {
+      paint
+        ..blendMode = BlendMode.clear
+        ..strokeWidth = stroke.width
+        ..color = const Color(0x00000000);
+    } else if (stroke.isHighlighter) {
+      paint
+        ..blendMode = BlendMode.srcOver
+        ..strokeWidth = stroke.width
+        ..strokeCap = StrokeCap.square
+        ..color = stroke.color.withOpacity(0.35);
+    } else {
+      paint
+        ..blendMode = BlendMode.srcOver
+        ..strokeWidth = stroke.width
+        ..color = stroke.color;
+    }
 
     final path = Path();
     final first = _px(stroke.points.first, size);
