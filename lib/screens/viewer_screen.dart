@@ -381,9 +381,8 @@ class _ViewerScreenState extends State<ViewerScreen> {
               fit: StackFit.expand,
               children: [
                 PdfPageView(
-                  pdfDocument: _document!,
+                  document: _document!,
                   pageNumber: pageNum,
-                  margin: 0,
                 ),
                 IgnorePointer(
                   ignoring: !_isDrawMode,
