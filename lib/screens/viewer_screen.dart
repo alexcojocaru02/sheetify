@@ -25,7 +25,7 @@ class ViewerScreen extends StatefulWidget {
 }
 
 class _ViewerScreenState extends State<ViewerScreen> {
-  late final PdfViewerController _pdfController;
+  late final PageController _pageController;
   late final AnnotationStore _store;
   final ScrollController _stripController = ScrollController();
 
@@ -47,9 +47,9 @@ class _ViewerScreenState extends State<ViewerScreen> {
     _store = AnnotationStore(widget.score.path);
     _store.load().then((_) => setState(() {}));
 
-    if (_isPdf) {
-      _pdfController = PdfViewerController();
-    }
+    _pageController = PageController();
+
+    if (_isPdf) _loadDocument();
 
     widget.library.addOrUpdate(Score(
       path: widget.score.path,
@@ -58,8 +58,19 @@ class _ViewerScreenState extends State<ViewerScreen> {
     ));
   }
 
+  Future<void> _loadDocument() async {
+    final doc = await PdfDocument.openFile(widget.score.path);
+    if (!mounted) return;
+    setState(() {
+      _document = doc;
+      _totalPages = doc.pages.length;
+    });
+  }
+
   @override
   void dispose() {
+    _pageController.dispose();
+    _document?.dispose();
     _stripController.dispose();
     super.dispose();
   }
@@ -82,7 +93,12 @@ class _ViewerScreenState extends State<ViewerScreen> {
   }
 
   void _goToPage(int page) {
-    if (_isPdf) _pdfController.goToPage(pageNumber: page);
+    if (!_isPdf) return;
+    _pageController.animateToPage(
+      page - 1,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _scrollStripToPage(int page) {
@@ -298,40 +314,93 @@ class _ViewerScreenState extends State<ViewerScreen> {
   }
 
   Widget _buildPdfViewer() {
-    return PdfViewer.file(
-      widget.score.path,
-      controller: _pdfController,
-      params: PdfViewerParams(
-        onPageChanged: (page) {
-          if (page != null && page != _currentPage) {
-            setState(() => _currentPage = page);
-            _scrollStripToPage(page);
-          }
-        },
-        onDocumentChanged: (doc) {
-          if (doc != null) {
-            setState(() {
-              _document = doc;
-              _totalPages = doc.pages.length;
-            });
-          }
-        },
-        pageOverlaysBuilder: (context, pageRect, page) {
-          return [
-            IgnorePointer(
-              ignoring: !_isDrawMode,
-              child: DrawingCanvas(
-                strokes: _store.getPage(page.pageNumber),
-                activeColor: _color,
-                activeWidth: _width,
-                isEraser: _tool == DrawTool.eraser,
-                isHighlighter: _tool == DrawTool.highlighter,
-                onStrokeComplete: (s) => _addStroke(page.pageNumber, s),
-              ),
+    if (_document == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        PageView.builder(
+          controller: _pageController,
+          // Disable swipe when drawing so strokes aren't interrupted
+          physics: _isDrawMode ? const NeverScrollableScrollPhysics() : null,
+          onPageChanged: (index) {
+            setState(() => _currentPage = index + 1);
+            _scrollStripToPage(index + 1);
+          },
+          itemCount: _totalPages,
+          itemBuilder: (context, index) => _buildPdfPage(index + 1),
+        ),
+        // Tap zones (hidden in draw mode)
+        if (!_isDrawMode) ...[
+          Positioned(
+            left: 0, top: 0, bottom: 0, width: 56,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () {
+                if (_currentPage > 1) _goToPage(_currentPage - 1);
+              },
             ),
-          ];
-        },
-      ),
+          ),
+          Positioned(
+            right: 0, top: 0, bottom: 0, width: 56,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () {
+                if (_currentPage < _totalPages) _goToPage(_currentPage + 1);
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPdfPage(int pageNum) {
+    final page = _document!.pages[pageNum - 1];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Fit the page inside available space, preserving aspect ratio
+        final pageAspect = page.width / page.height;
+        final screenAspect = constraints.maxWidth / constraints.maxHeight;
+        final Size fitted;
+        if (pageAspect < screenAspect) {
+          // Taller relative to screen → fit to height
+          fitted = Size(constraints.maxHeight * pageAspect, constraints.maxHeight);
+        } else {
+          // Wider relative to screen → fit to width
+          fitted = Size(constraints.maxWidth, constraints.maxWidth / pageAspect);
+        }
+
+        return Center(
+          child: SizedBox(
+            width: fitted.width,
+            height: fitted.height,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                PdfPageView(
+                  pdfDocument: _document!,
+                  pageNumber: pageNum,
+                  margin: 0,
+                ),
+                IgnorePointer(
+                  ignoring: !_isDrawMode,
+                  child: DrawingCanvas(
+                    strokes: _store.getPage(pageNum),
+                    activeColor: _color,
+                    activeWidth: _width,
+                    isEraser: _tool == DrawTool.eraser,
+                    isHighlighter: _tool == DrawTool.highlighter,
+                    onStrokeComplete: (s) => _addStroke(pageNum, s),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
